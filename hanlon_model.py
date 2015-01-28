@@ -13,49 +13,50 @@ ansible/hacking/test-module -m ./hanlon_ansible.py -a "base_url=http://192.168.1
 '''
 
 import requests
+from hanlon import *
 
 
-#{"label":"Test Model", "image_uuid":"OTP", "template":"ubuntu_oneiric",
-# "req_metadata_hash":{"hostname_prefix":"test","domainname":"testdomain.com","root_password":"test4321"}}
-def create_new_hanlon_model(module, req_metadata_hash, opt_metadata_hash):
+def create_new_hanlon_model(module, metadata_hash):
+    """ comments here """
+
+    req_metadata_params = dict()
 
     base_url = module.params['base_url']
+    url = "%s/model" % base_url
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
 
-    url = "%s/model" % base_url
-
-    req_metadata_params = {}
-
-    for req_meta in req_metadata_hash:
+    # We need to generate the req_metadata_params to POST into Hanlon
+    for metadata in metadata_hash:
         req_metadata_params.update({
-            req_meta: module.params[req_meta]
+            metadata: module.params[metadata]
         })
-
 
     payload = {
         'label': module.params['label'],
-        'image_uuid': module.params['image_uuid'],
         'template': module.params['template'],
         'req_metadata_params': req_metadata_params
     }
 
-    # print json.dumps(payload)
+    if (module.params['template'] != 'boot_local') or (module.params['template'] != 'discover_only'):
+        payload.update({'image_uuid': module.params['image_uuid']})
 
-    req = requests.post(url, data=json.dumps(payload), headers=headers)
+    try:
+        req = requests.post(url, data=json.dumps(payload), headers=headers)
+        json_result = req.json()
+    except Exception:
+        module.fail_json(msg="POST failed")
 
-    #print json.dumps(req.json(), indent=4)
-
-    return req.json()
-
+    return json_result
 
 
 def create_argument_spec(base_url, model_template):
+    """ comments here"""
 
-    req_metadata_hash = []
-    opt_metadata_hash = []
+    metadata_types = "@req_metadata_hash", "@opt_metadata_hash"
+    metadata_hash = []
+    argument_spec = dict()
 
     url = "%s/model/templates/%s" % (base_url, model_template)
-    argument_spec = dict()
 
     if (model_template == 'boot_local') or (model_template == 'discover_only'):
         argument_spec.update(image_uuid=dict(required=False))
@@ -74,62 +75,28 @@ def create_argument_spec(base_url, model_template):
 
     template = req.json()
 
-    for req_metadata in template['response']['@req_metadata_hash']:
-        req_metadata_hash.append(req_metadata[1:])
-        argument_spec.update({
-            req_metadata[1:]: dict(
-                {'required': template['response']['@req_metadata_hash'][req_metadata]['required']}
-            )})
-
-    for opt_metadata in template['response']['@opt_metadata_hash']:
-        opt_metadata_hash.append(opt_metadata[1:])
-        argument_spec.update({
-            opt_metadata[1:]: dict(
-                {'required': template['response']['@opt_metadata_hash'][opt_metadata]['required']}
-            )})
+    for md_type in metadata_types:
+        for metadata in template['response'][md_type]:
+            metadata_hash.append(metadata[1:])
+            argument_spec.update({
+                metadata[1:]: dict(
+                    {'required': template['response'][md_type][metadata]['required']}
+                )})
 
     print json.dumps(argument_spec)
-    return argument_spec, req_metadata_hash, opt_metadata_hash
-
-# Copied code from _load_params(self)
-# https://github.com/ansible/ansible/blob/devel/lib/ansible/module_utils/basic.py
-
-
-def peek_params():
-    base_url = ""
-    model = ""
-    args = MODULE_ARGS
-    items = shlex.split(args)
-
-    for x in items:
-        try:
-            (k, v) = x.split("=", 1)
-            if k == 'base_url':
-                base_url = v
-            elif k == 'template':
-                model = v
-        except Exception, e:
-            exit(1)
-
-    return base_url, model
-
-from ansible.module_utils.basic import *
+    return argument_spec, metadata_hash
 
 
 def main():
-
-    # So we are going to cheat a little.  In order to use the AnsibleModule we will peek at
-    # at the input to determine the basic configuration, model template being used and the URI
-    # of the hanlon server.
+    """ comments here"""
 
     (base_url, model_template) = peek_params()
 
-    # need check to make sure values are filled in
-    argument_spec, req_metadata_hash, opt_metadata_hash = create_argument_spec(base_url, model_template)
+    argument_spec, metadata_hash = create_argument_spec(base_url, model_template)
 
     module = AnsibleModule(argument_spec=argument_spec)
 
-    new_model = create_new_hanlon_model(module, req_metadata_hash, opt_metadata_hash)
+    new_model = create_new_hanlon_model(module, metadata_hash)
 
     module.exit_json(changed=True, something_else=12345)
 
