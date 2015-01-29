@@ -1,2 +1,20 @@
 ---
 # tasks file for example-role
+
+- name: Add a Microkernel to Hanlon
+  hanlon_image: base_url={{ hanlon_base_url }} type=mk path={{ mk_path }}
+  delegate_to: localhost
+
+- name: Add an OS to Hanlon
+  hanlon_image: base_url={{ hanlon_base_url }} type=os path={{ os_path }} 
+                name={{ os_name }} version={{ os_version }}
+  register: image
+  delegate_to: localhost
+
+- debug: var=image
+
+- name: Add a Model to Hanlon
+  hanlon_model: base_url={{ hanlon_base_url }} template=redhat_7 label=centos7_model 
+                image_uuid={{ image.uuid }} hostname_prefix=centos domainname=testdomain.com 
+                root_password=trustn01
+

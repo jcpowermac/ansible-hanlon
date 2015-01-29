@@ -1,0 +1,13 @@
+---
+- name: Hanlon Example Role
+  hosts: localhost 
+  gather_facts: false 
+  vars:
+    hanlon_base_url: http://192.168.122.56:8026/hanlon/api/v1/
+    mk_path: /home/hanlon/image/hnl_mk_debug-image.2.0.0.iso
+    os_path: /home/hanlon/image/CentOS-7.0-1406-x86_64-Minimal.iso
+    os_name: CentOS
+    os_version: 7.0
+
+  roles:
+    - { role: example-role }
