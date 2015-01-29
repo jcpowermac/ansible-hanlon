@@ -2,24 +2,51 @@
 
 DOCUMENTATION = '''
 ---
+# If a key doesn't apply to your module (ex: choices, default, or
+# aliases) you can use the word 'null', or an empty list, [], where
+# appropriate.
 module: hanlon_model
-short_description: This is a sentence describing the module
-# ... snip ...
-
-
-1z92ygFkLsSqNz1fgCfTRG
-
-ansible/hacking/test-module -m ./hanlon_ansible.py -a "base_url=http://192.168.122.56:8026/hanlon/api/v1/ template=redhat_7 label=centos7_model image_uuid=1z92ygFkLsSqNz1fgCfTRG hostname_prefix=centos domainname=testdomain.com root_password=trustn01"
+short_description: Add a new model to Hanlon
+description:
+    - A Hanlon model describes how a bare metal server operating system should be configured when provisioning
+    this module adds a model to Hanlon.
+version_added: null
+author: Joseph Callen
+notes: null
+requirements:
+    - requests
+    - Hanlon server
+options:
+    base_url:
+        description:
+            - The url to the Hanlon RESTful base endpoint
+        required: true
+        default: null
+        aliases: []
+    template:
+        description:
+            - The available OS templates for use with Hanlon.  From the CLI ./hanlon model templates
+        required: true
+        default: null
+        aliases: []
+notes:
+    - This module should run from a system that can access Hanlon directly. Either by using local_action, or using delegate_to.
+    - The options for this module are dynamic based on the template type.  The req_metadata_hash and opt_metadata_hash keys map to options
 '''
 
 import requests
 from ansible.module_utils.basic import *
 
-# Since I am doing things a little different as certain points in code execution I cannot use
-# the provided AnsibleModule methods.  Instead I am modifying for specific use.
-# https://github.com/ansible/ansible/blob/devel/lib/ansible/module_utils/basic.py
 
 def _jsonify(data):
+    """
+    Since I am doing things a little different as certain points in code execution I cannot use
+    the provided AnsibleModule methods.  Instead I am modifying for specific use.
+    https://github.com/ansible/ansible/blob/devel/lib/ansible/module_utils/basic.py
+    :param data:
+    :return: json
+
+    """
     for encoding in ("utf-8", "latin-1", "unicode_escape"):
         try:
             return json.dumps(data, encoding=encoding)
@@ -32,8 +59,11 @@ def _jsonify(data):
 
 
 def _fail_json(**kwargs):
+    """
+    :param kwargs:
+    :return:
+    """
 
-    assert 'msg' in kwargs, "implementation error -- msg to explain the error is required"
     kwargs['failed'] = True
     print _jsonify(kwargs)
     sys.exit(1)
@@ -47,6 +77,14 @@ def _fail_json(**kwargs):
 # of the Hanlon server.
 
 def peek_params():
+    """
+    Copied code from _load_params(self) - https://github.com/ansible/ansible/blob/devel/lib/ansible/module_utils/basic.py
+    So we are going to cheat a little.  In order to use the AnsibleModule we will peek at
+    the MODULE_ARGS to determine the basic configuration, model template being used and the URI of the Hanlon server.
+
+    :returns base_url, template
+    """
+
     base_url = ""
     template = ""
     args = MODULE_ARGS
@@ -70,7 +108,12 @@ def peek_params():
     return base_url, template
 
 def create_new_hanlon_model(module, metadata_hash):
-    """ comments here """
+    """
+
+    :param module:
+    :param metadata_hash:
+    :return:
+    """
 
     req_metadata_params = dict()
 

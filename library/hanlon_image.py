@@ -1,21 +1,59 @@
 #!/usr/bin/python
 
-__author__ = 'jcallen'
-
-
 DOCUMENTATION = '''
 ---
+module: hanlon_image
+short_description: Add a new image to Hanlon
+description:
+    -
+version_added: null
+author: Joseph Callen
+requirements:
+    - requests
+    - Hanlon server
+options:
+    base_url:
+        description:
+            - The url to the Hanlon RESTful base endpoint
+        required: true
+        default: null
+        aliases: []
+    type:
+        description:
+            - The available OS templates for use with Hanlon.  From the CLI ./hanlon model templates
+        required: true
+        default: null
+        aliases: []
+    path:
+        description:
+            - The path to an ISO image for either an OS, hypervisor or microkernel
+        required: true
+        default: null
+        aliases: []
+    name:
+        description: null
+        required: false
+        default: null
+        aliases: []
+    version:
+        description:
+            - The version of the OS
+        required: false
+        default: null
+        aliases: []
 
-/home/jcallen/Development/ansible/hacking/test-module -m /home/jcallen/Development/ansible-hanlon/hanlon_image.py
--a "base_url=http://192.168.122.56:8026/hanlon/api/v1/ type=os name=ansible_os path=/home/hanlon/image/CentOS-7.0-1406-x86_64-Minimal.iso version=7.0"
-
+notes:
+    - This module should run from a system that can access Hanlon directly. Either by using local_action, or using delegate_to.
 '''
 
 import requests
 from ansible.module_utils.basic import *
 
 def create_new_hanlon_image(module):
-    """ comments here """
+    """
+    :param module:
+    :return:
+    """
 
     base_url = module.params['base_url']
     url = "%s/image" % base_url
@@ -41,7 +79,9 @@ def create_new_hanlon_image(module):
     return json_result
 
 def create_argument_spec():
-    """ comments here """
+    """
+    :return argument_spec:
+    """
     argument_spec = dict()
 
     argument_spec.update(
